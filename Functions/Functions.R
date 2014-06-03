@@ -78,6 +78,8 @@ CalcStats <- cmpfun(function(data){
 	
 	
 	row <- data.frame(Client=data[1,"accountid"],
+										FirstTrade = min(as.Date(data[,"MOpeningTime"])),
+										LastTrade = max(as.Date(data[,"MOpeningTime"])),
 										TypicalStake = mean(abs(data[,"StakeGBP"])),
 										TradesPerTradingDay = TradesPerTradingDay,
 										MeanRealized = mean(data[,"PLGBP"]),

@@ -1,6 +1,8 @@
 rm(list=ls())
 library(compiler)
 
+setwd("J:/Management Research/UoS PFM/Git/Survival")
+
 source(file.path("Functions","Functions.R"))
 
 clients <- Get.Client.List()
