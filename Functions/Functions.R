@@ -2,6 +2,7 @@
 ### FUNCTIONS ##
 ################
 library(RODBC)
+library(compiler)
 
 n <- function(x)  if(sum(dim(x)) > 0) return(nrow(x)) else return(length(x)) # Returns the length of vectors or the number of rows in a matix/dataframe
 
@@ -22,17 +23,44 @@ Get.Client.List <- function(conditions=""){
 	return(q[,1])
 }
 
+
+
 GetClientTrades <- cmpfun(function(client){
-	mrks <- as.character(query(sprintf("select distinct GrpMarket from mastertradetable as m where accountid = %s",client))[,1])
-	
+
 	key <- data.frame(market = c('UK 100 Rolling Daily','DAX 30  Rolling Daily','X EUR/USD Rolling Daily','X GBP/USD Rolling Daily'),
 										ticktable = c("TICK_DATA_MINUTE_FT","TICK_DATA_MINUTE_DAX","TICK_DATA_MINUTE_EUDOLLAR","TICK_DATA_MINUTE_POUNDOLLAR"))
-	temp <- NULL
-	for(market in mrks){
-		tick <- key$ticktable[market==key$market]
+
+
+	mrks <- as.character(query(sprintf("select distinct GrpMarket from mastertradetable as m where accountid = %s",client))[,1])
+	
+
+	if(length(mrks) > 1)	{	
+
+	temp <- query(sprintf("select
+					m.OpeningTradeId,
+					m.accountid,
+					m.GrpMarket,
+					m.MOpeningTime,
+					m.MClosingTime,
+					m.pipsize,
+					m.OpeningPrice,
+					m.ClosingPrice,
+					m.bet_direction,
+					m.PL_GBP as PLGBP,
+					tick.TimeStamp,
+					tick.AvgPrice,
+					Imputed
+					from mastertradetable as m
+					JOIN tick on
+					m.GrpMarket = tick.GrpMarket and
+					tick.TimeStamp > MOpeningTime and tick.TimeStamp < MClosingTime
+					where accountid = %s", client))}
+	
+	if(length(mrks) == 1){
 		
-		temp <- rbind(temp,
-									query(sprintf("
+		tick <- key$ticktable[mrks==key$market]
+
+		temp <- query(sprintf("
 																select
 																m.OpeningTradeId,
 																m.accountid,
@@ -51,8 +79,9 @@ GetClientTrades <- cmpfun(function(client){
 																from mastertradetable as m
 																JOIN %s as tick on
 																tick.TimeStamp > MOpeningTime and tick.TimeStamp < MClosingTime
-																where accountid = %s and m.GrpMarket = '%s'",tick, client, market)))
+																where accountid = %s and m.GrpMarket = '%s'",tick, client, mrks))
 	}
+	
 	temp <- subset(temp, temp$PLGBP != 0)
 	temp$StakeGBP <- temp$PLGBP /((temp$ClosingPrice - temp$OpeningPrice) /temp$pipsize)
 	return(temp)

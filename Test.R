@@ -11,6 +11,8 @@ out <- NULL
 
 total <- length(clients)
 
+client <- clients[1]
+
 pb <- winProgressBar(title ="progress bar", min = 0, max = total, width = 300)
 
 
@@ -19,10 +21,10 @@ for(i in 1:total){
 		data <- GetClientTrades(clients[i])	
 		row <- CalcStats(data)
 		out <- rbind(row,out)
-		cat(i,"\n")
 		if(i %% 2500 == 0) save(out, file=file.path("Data",sprintf("ClientSummaryTable_%s.RData",i)))
 		setWinProgressBar(pb, i, title=paste( round(i/total*100, 0),"% complete"))
 	})
+	cat(i,"\n")
 }
 
 save(out, file=file.path("ClientSummaryTable.RData"))
